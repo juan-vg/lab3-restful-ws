@@ -34,19 +34,39 @@ public class AddressBookServiceTest {
 		// Prepare server
 		AddressBook ab = new AddressBook();
 		launchServer(ab);
+		
+		// Get number of contacts
+		int ABSize = ab.getPersonList().size();
 
-		// Request the address book
+		
+		// First request to the address book
 		Client client = ClientBuilder.newClient();
 		Response response = client.target("http://localhost:8282/contacts")
 				.request().get();
 		assertEquals(200, response.getStatus());
-		assertEquals(0, response.readEntity(AddressBook.class).getPersonList()
-				.size());
+		
+		// Get the number of contacts from the first request
+		int req1ABSize = response.readEntity(AddressBook.class).getPersonList().size();
+		
+		
+		// Second request to the address book
+		response = client.target("http://localhost:8282/contacts")
+                .request().get();
+        assertEquals(200, response.getStatus());
+        
+        // Get the number of contacts from the second request
+        int req2ABSize = response.readEntity(AddressBook.class).getPersonList().size();
 
+        
 		//////////////////////////////////////////////////////////////////////
-		// Verify that GET /contacts is well implemented by the service, i.e
-		// test that it is safe and idempotent
+		// Verify that GET /contacts is well implemented by the service
 		//////////////////////////////////////////////////////////////////////	
+        
+        // test that it returns the correct value
+        assertEquals(ABSize, req1ABSize);
+        
+        // test that it is safe (basic check) and idempotent
+        assertEquals(req1ABSize, req2ABSize);
 	}
 
 	@Test
