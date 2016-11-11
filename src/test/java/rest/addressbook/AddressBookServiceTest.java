@@ -35,8 +35,8 @@ public class AddressBookServiceTest {
 		AddressBook ab = new AddressBook();
 		launchServer(ab);
 		
-		// Get number of contacts
-		int ABSize = ab.getPersonList().size();
+		// Get number of contacts before requests
+		int ABSizeBefore = ab.getPersonList().size();
 
 		
 		// First request to the address book
@@ -56,16 +56,19 @@ public class AddressBookServiceTest {
         
         // Get the number of contacts from the second request
         int req2ABSize = response.readEntity(AddressBook.class).getPersonList().size();
-
+        
+        
+        // Get number of contacts after request
+        int ABSizeAfter = ab.getPersonList().size();
         
 		//////////////////////////////////////////////////////////////////////
 		// Verify that GET /contacts is well implemented by the service
 		//////////////////////////////////////////////////////////////////////	
         
-        // test that it returns the correct value
-        assertEquals(ABSize, req1ABSize);
+        // test that it is safe
+        assertEquals(ABSizeBefore, ABSizeAfter);
         
-        // test that it is safe (basic check) and idempotent
+        // test that it is idempotent
         assertEquals(req1ABSize, req2ABSize);
 	}
 
