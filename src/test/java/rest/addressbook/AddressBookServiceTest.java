@@ -41,18 +41,18 @@ public class AddressBookServiceTest {
 
         // First request to the address book
         Client client = ClientBuilder.newClient();
-        Response response = client.target("http://localhost:8282/contacts").request().get();
-        assertEquals(200, response.getStatus());
+        Response response1 = client.target("http://localhost:8282/contacts").request().get();
+        assertEquals(200, response1.getStatus());
 
         // Get the number of contacts from the first request
-        int req1ABSize = response.readEntity(AddressBook.class).getPersonList().size();
+        int req1ABSize = response1.readEntity(AddressBook.class).getPersonList().size();
 
         // Second request to the address book
-        response = client.target("http://localhost:8282/contacts").request().get();
-        assertEquals(200, response.getStatus());
+        Response response2 = client.target("http://localhost:8282/contacts").request().get();
+        assertEquals(200, response2.getStatus());
 
         // Get the number of contacts from the second request
-        int req2ABSize = response.readEntity(AddressBook.class).getPersonList().size();
+        int req2ABSize = response2.readEntity(AddressBook.class).getPersonList().size();
 
         // Get number of contacts after request
         int ABSizeAfter = ab.getPersonList().size();
@@ -65,6 +65,7 @@ public class AddressBookServiceTest {
         assertEquals(ABSizeBefore, ABSizeAfter);
 
         // test that it is idempotent
+        assertEquals(response1.getStatus(), response2.getStatus());
         assertEquals(req1ABSize, req2ABSize);
     }
 
@@ -242,21 +243,45 @@ public class AddressBookServiceTest {
         ab.getPersonList().add(juan);
         launchServer(ab);
 
-        // Test list of contacts
+        // Get the number of contacts before requests
+        int ABSizeBefore = ab.getPersonList().size();
+
+        // Test (for the first time) list of contacts
         Client client = ClientBuilder.newClient();
         Response response = client.target("http://localhost:8282/contacts").request(MediaType.APPLICATION_JSON).get();
         assertEquals(200, response.getStatus());
         assertEquals(MediaType.APPLICATION_JSON_TYPE, response.getMediaType());
-        AddressBook addressBookRetrieved = response.readEntity(AddressBook.class);
-        assertEquals(2, addressBookRetrieved.getPersonList().size());
-        assertEquals(juan.getName(), addressBookRetrieved.getPersonList().get(1).getName());
+        AddressBook addressBookRetrieved1 = response.readEntity(AddressBook.class);
+        assertEquals(2, addressBookRetrieved1.getPersonList().size());
+        assertEquals(salvador.getName(), addressBookRetrieved1.getPersonList().get(0).getName());
+        assertEquals(juan.getName(), addressBookRetrieved1.getPersonList().get(1).getName());
+
+        // Test (for the second time) list of contacts
+        client = ClientBuilder.newClient();
+        response = client.target("http://localhost:8282/contacts").request(MediaType.APPLICATION_JSON).get();
+        assertEquals(200, response.getStatus());
+        assertEquals(MediaType.APPLICATION_JSON_TYPE, response.getMediaType());
+        AddressBook addressBookRetrieved2 = response.readEntity(AddressBook.class);
+        assertEquals(2, addressBookRetrieved2.getPersonList().size());
+        assertEquals(salvador.getName(), addressBookRetrieved1.getPersonList().get(0).getName());
+        assertEquals(juan.getName(), addressBookRetrieved2.getPersonList().get(1).getName());
+
+        // Get the number of contacts after requests
+        int ABSizeAfter = ab.getPersonList().size();
 
         //////////////////////////////////////////////////////////////////////
-        // Verify that GET for collections is well implemented by the service,
-        ////////////////////////////////////////////////////////////////////// i.e
-        // test that it is safe and idempotent
+        // Verify that GET for collections is well implemented by the service
         //////////////////////////////////////////////////////////////////////
 
+        // test that it is safe
+        assertEquals(ABSizeBefore, ABSizeAfter);
+
+        // test that it is idempotent
+        assertEquals(addressBookRetrieved1.getPersonList().size(), addressBookRetrieved2.getPersonList().size());
+        assertEquals(addressBookRetrieved1.getPersonList().get(0).getName(),
+                addressBookRetrieved2.getPersonList().get(0).getName());
+        assertEquals(addressBookRetrieved1.getPersonList().get(1).getName(),
+                addressBookRetrieved2.getPersonList().get(1).getName());
     }
 
     @Test
