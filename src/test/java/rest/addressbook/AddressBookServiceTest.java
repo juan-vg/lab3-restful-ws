@@ -299,40 +299,65 @@ public class AddressBookServiceTest {
         ab.getPersonList().add(juan);
         launchServer(ab);
 
-        // Update Maria
+        // Update Maria (for the first time)
         Person maria = new Person();
         maria.setName("Maria");
         Client client = ClientBuilder.newClient();
-        Response response = client.target("http://localhost:8282/contacts/person/2").request(MediaType.APPLICATION_JSON)
-                .put(Entity.entity(maria, MediaType.APPLICATION_JSON));
-        assertEquals(200, response.getStatus());
-        assertEquals(MediaType.APPLICATION_JSON_TYPE, response.getMediaType());
-        Person juanUpdated = response.readEntity(Person.class);
-        assertEquals(maria.getName(), juanUpdated.getName());
-        assertEquals(2, juanUpdated.getId());
-        assertEquals(juanURI, juanUpdated.getHref());
+        Response response1 = client.target("http://localhost:8282/contacts/person/2")
+                .request(MediaType.APPLICATION_JSON).put(Entity.entity(maria, MediaType.APPLICATION_JSON));
+        assertEquals(200, response1.getStatus());
+        assertEquals(MediaType.APPLICATION_JSON_TYPE, response1.getMediaType());
+        Person juanUpdated1 = response1.readEntity(Person.class);
+        assertEquals(maria.getName(), juanUpdated1.getName());
+        assertEquals(2, juanUpdated1.getId());
+        assertEquals(juanURI, juanUpdated1.getHref());
 
-        // Verify that the update is real
-        response = client.target("http://localhost:8282/contacts/person/2").request(MediaType.APPLICATION_JSON).get();
-        assertEquals(200, response.getStatus());
-        assertEquals(MediaType.APPLICATION_JSON_TYPE, response.getMediaType());
-        Person mariaRetrieved = response.readEntity(Person.class);
-        assertEquals(maria.getName(), mariaRetrieved.getName());
-        assertEquals(2, mariaRetrieved.getId());
-        assertEquals(juanURI, mariaRetrieved.getHref());
+        // Verify that the update is real (for the first time)
+        response1 = client.target("http://localhost:8282/contacts/person/2").request(MediaType.APPLICATION_JSON).get();
+        assertEquals(200, response1.getStatus());
+        assertEquals(MediaType.APPLICATION_JSON_TYPE, response1.getMediaType());
+        Person mariaRetrieved1 = response1.readEntity(Person.class);
+        assertEquals(maria.getName(), mariaRetrieved1.getName());
+        assertEquals(2, mariaRetrieved1.getId());
+        assertEquals(juanURI, mariaRetrieved1.getHref());
+
+        // Update Maria (for the second time)
+        client = ClientBuilder.newClient();
+        Response response2 = client.target("http://localhost:8282/contacts/person/2")
+                .request(MediaType.APPLICATION_JSON).put(Entity.entity(maria, MediaType.APPLICATION_JSON));
+        assertEquals(200, response2.getStatus());
+        assertEquals(MediaType.APPLICATION_JSON_TYPE, response2.getMediaType());
+        Person juanUpdated2 = response2.readEntity(Person.class);
+        assertEquals(maria.getName(), juanUpdated2.getName());
+        assertEquals(2, juanUpdated2.getId());
+        assertEquals(juanURI, juanUpdated2.getHref());
+
+        // Verify that the update is real (for the second time)
+        response2 = client.target("http://localhost:8282/contacts/person/2").request(MediaType.APPLICATION_JSON).get();
+        assertEquals(200, response2.getStatus());
+        assertEquals(MediaType.APPLICATION_JSON_TYPE, response2.getMediaType());
+        Person mariaRetrieved2 = response2.readEntity(Person.class);
+        assertEquals(maria.getName(), mariaRetrieved2.getName());
+        assertEquals(2, mariaRetrieved2.getId());
+        assertEquals(juanURI, mariaRetrieved2.getHref());
+
+        //////////////////////////////////////////////////////////////////////
+        // Verify that PUT /contacts/person/2 is well implemented by
+        // the service
+        //////////////////////////////////////////////////////////////////////
+
+        // test that it is idempotent
+        assertEquals(juanUpdated1.getName(), juanUpdated2.getName());
+        assertEquals(juanUpdated1.getId(), juanUpdated2.getId());
+        assertEquals(juanUpdated1.getHref(), juanUpdated2.getHref());
+        assertEquals(mariaRetrieved1.getName(), mariaRetrieved2.getName());
+        assertEquals(mariaRetrieved1.getId(), mariaRetrieved2.getId());
+        assertEquals(mariaRetrieved1.getHref(), mariaRetrieved2.getHref());
 
         // Verify that only can be updated existing values
-        response = client.target("http://localhost:8282/contacts/person/3").request(MediaType.APPLICATION_JSON)
+        Response response = client.target("http://localhost:8282/contacts/person/3").request(MediaType.APPLICATION_JSON)
                 .put(Entity.entity(maria, MediaType.APPLICATION_JSON));
         assertEquals(400, response.getStatus());
-
-        //////////////////////////////////////////////////////////////////////
-        // Verify that PUT /contacts/person/2 is well implemented by the
-        ////////////////////////////////////////////////////////////////////// service,
-        ////////////////////////////////////////////////////////////////////// i.e
-        // test that it is idempotent
-        //////////////////////////////////////////////////////////////////////
-
     }
 
     @Test
