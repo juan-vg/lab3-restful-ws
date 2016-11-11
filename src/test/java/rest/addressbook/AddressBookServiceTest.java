@@ -20,6 +20,7 @@ import rest.addressbook.domain.AddressBook;
 import rest.addressbook.domain.Person;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 
 /**
  * A simple test suite
@@ -61,6 +62,7 @@ public class AddressBookServiceTest {
         // Get number of contacts after request
         int ABSizeAfter = ab.getPersonList().size();
         
+        
 		//////////////////////////////////////////////////////////////////////
 		// Verify that GET /contacts is well implemented by the service
 		//////////////////////////////////////////////////////////////////////	
@@ -77,41 +79,90 @@ public class AddressBookServiceTest {
 		// Prepare server
 		AddressBook ab = new AddressBook();
 		launchServer(ab);
+		
+		// Get the number of contacts before requests
+		int ABSizeBefore = ab.getPersonList().size();
 
 		// Prepare data
 		Person juan = new Person();
 		juan.setName("Juan");
-		URI juanURI = URI.create("http://localhost:8282/contacts/person/1");
+		URI juanURI1 = URI.create("http://localhost:8282/contacts/person/1");
+		URI juanURI2 = URI.create("http://localhost:8282/contacts/person/2");
 
-		// Create a new user
+		// Create the first new user
 		Client client = ClientBuilder.newClient();
 		Response response = client.target("http://localhost:8282/contacts")
 				.request(MediaType.APPLICATION_JSON)
 				.post(Entity.entity(juan, MediaType.APPLICATION_JSON));
 
 		assertEquals(201, response.getStatus());
-		assertEquals(juanURI, response.getLocation());
+		assertEquals(juanURI1, response.getLocation());
 		assertEquals(MediaType.APPLICATION_JSON_TYPE, response.getMediaType());
-		Person juanUpdated = response.readEntity(Person.class);
-		assertEquals(juan.getName(), juanUpdated.getName());
-		assertEquals(1, juanUpdated.getId());
-		assertEquals(juanURI, juanUpdated.getHref());
+		Person juanUpdated1 = response.readEntity(Person.class);
+		assertEquals(juan.getName(), juanUpdated1.getName());
+		assertEquals(1, juanUpdated1.getId());
+		assertEquals(juanURI1, juanUpdated1.getHref());
 
-		// Check that the new user exists
+		// Check that the first new user exists
 		response = client.target("http://localhost:8282/contacts/person/1")
 				.request(MediaType.APPLICATION_JSON).get();
 		assertEquals(200, response.getStatus());
 		assertEquals(MediaType.APPLICATION_JSON_TYPE, response.getMediaType());
-		juanUpdated = response.readEntity(Person.class);
-		assertEquals(juan.getName(), juanUpdated.getName());
-		assertEquals(1, juanUpdated.getId());
-		assertEquals(juanURI, juanUpdated.getHref());
+		juanUpdated1 = response.readEntity(Person.class);
+		assertEquals(juan.getName(), juanUpdated1.getName());
+		assertEquals(1, juanUpdated1.getId());
+		assertEquals(juanURI1, juanUpdated1.getHref());
+		
+		// Get the URI from the first new user
+		URI req1URI = juanUpdated1.getHref();
+		
+		
+		// Get the number of contacts between requests
+        int ABSizeBetween = ab.getPersonList().size();
+		
+		
+		// Create the second new user (same as first new user)
+        client = ClientBuilder.newClient();
+        response = client.target("http://localhost:8282/contacts")
+                .request(MediaType.APPLICATION_JSON)
+                .post(Entity.entity(juan, MediaType.APPLICATION_JSON));
+
+        assertEquals(201, response.getStatus());
+        assertEquals(juanURI2, response.getLocation());
+        assertEquals(MediaType.APPLICATION_JSON_TYPE, response.getMediaType());
+        Person juanUpdated2 = response.readEntity(Person.class);
+        assertEquals(juan.getName(), juanUpdated2.getName());
+        assertEquals(2, juanUpdated2.getId());
+        assertEquals(juanURI2, juanUpdated2.getHref());
+
+        // Check that the second new user exists
+        response = client.target("http://localhost:8282/contacts/person/2")
+                .request(MediaType.APPLICATION_JSON).get();
+        assertEquals(200, response.getStatus());
+        assertEquals(MediaType.APPLICATION_JSON_TYPE, response.getMediaType());
+        juanUpdated2 = response.readEntity(Person.class);
+        assertEquals(juan.getName(), juanUpdated2.getName());
+        assertEquals(2, juanUpdated2.getId());
+        assertEquals(juanURI2, juanUpdated2.getHref());
+        
+        // Get the URI from the second new user
+        URI req2URI = juanUpdated2.getHref();
+		
+		
+		// Get the number of contacts after requests
+        int ABSizeAfter = ab.getPersonList().size();
+		
 
 		//////////////////////////////////////////////////////////////////////
-		// Verify that POST /contacts is well implemented by the service, i.e
-		// test that it is not safe and not idempotent
+		// Verify that POST /contacts is well implemented by the service
 		//////////////////////////////////////////////////////////////////////	
-				
+		
+        // test that it is NOT safe
+        assertNotEquals(ABSizeBefore, ABSizeBetween);
+        assertNotEquals(ABSizeBetween, ABSizeAfter);
+        
+        // test that it is NOT idempotent
+        assertNotEquals(req1URI, req2URI);
 	}
 
 	@Test
