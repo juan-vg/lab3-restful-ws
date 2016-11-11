@@ -376,20 +376,27 @@ public class AddressBookServiceTest {
 
         // Delete a user
         Client client = ClientBuilder.newClient();
-        Response response = client.target("http://localhost:8282/contacts/person/2").request().delete();
-        assertEquals(204, response.getStatus());
+        Response response1 = client.target("http://localhost:8282/contacts/person/2").request().delete();
+        assertEquals(204, response1.getStatus());
 
-        // Verify that the user has been deleted
-        response = client.target("http://localhost:8282/contacts/person/2").request().delete();
-        assertEquals(404, response.getStatus());
+        // Verify that the user has been deleted (for the first time)
+        Response response2 = client.target("http://localhost:8282/contacts/person/2").request().delete();
+        assertEquals(404, response2.getStatus());
+
+        // Verify that the user has been deleted (for the second time)
+        Response response3 = client.target("http://localhost:8282/contacts/person/2").request().delete();
+        assertEquals(404, response3.getStatus());
 
         //////////////////////////////////////////////////////////////////////
-        // Verify that DELETE /contacts/person/2 is well implemented by the
-        ////////////////////////////////////////////////////////////////////// service,
-        ////////////////////////////////////////////////////////////////////// i.e
-        // test that it is idempotent
+        // Verify that DELETE /contacts/person/2 is well implemented by
+        // the service
         //////////////////////////////////////////////////////////////////////
-
+        
+        // test that it is NOT idempotent (when /contacts/person/2 exist)
+        assertNotEquals(response1.getStatus(), response2.getStatus());
+        
+        // test that it is idempotent (when /contacts/person/2 does not exist)
+        assertEquals(response2.getStatus(), response3.getStatus());
     }
 
     @Test
