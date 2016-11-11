@@ -187,22 +187,46 @@ public class AddressBookServiceTest {
         assertEquals(3, mariaUpdated.getId());
         assertEquals(mariaURI, mariaUpdated.getHref());
 
-        // Check that the new user exists
-        response = client.target("http://localhost:8282/contacts/person/3").request(MediaType.APPLICATION_JSON).get();
-        assertEquals(200, response.getStatus());
-        assertEquals(MediaType.APPLICATION_JSON_TYPE, response.getMediaType());
-        mariaUpdated = response.readEntity(Person.class);
-        assertEquals(maria.getName(), mariaUpdated.getName());
-        assertEquals(3, mariaUpdated.getId());
-        assertEquals(mariaURI, mariaUpdated.getHref());
+        // Get the number of contacts before requests
+        int ABSizeBefore = ab.getPersonList().size();
+
+        // check (for the first time) that the new user exists
+        Response response1 = client.target("http://localhost:8282/contacts/person/3")
+                .request(MediaType.APPLICATION_JSON).get();
+        assertEquals(200, response1.getStatus());
+        assertEquals(MediaType.APPLICATION_JSON_TYPE, response1.getMediaType());
+        Person mariaUpdated1 = response1.readEntity(Person.class);
+        assertEquals(maria.getName(), mariaUpdated1.getName());
+        assertEquals(3, mariaUpdated1.getId());
+        assertEquals(mariaURI, mariaUpdated1.getHref());
+
+        // check (for the second time) that the new user exists
+        Response response2 = client.target("http://localhost:8282/contacts/person/3")
+                .request(MediaType.APPLICATION_JSON).get();
+        assertEquals(200, response2.getStatus());
+        assertEquals(MediaType.APPLICATION_JSON_TYPE, response2.getMediaType());
+        Person mariaUpdated2 = response2.readEntity(Person.class);
+        assertEquals(maria.getName(), mariaUpdated2.getName());
+        assertEquals(3, mariaUpdated2.getId());
+        assertEquals(mariaURI, mariaUpdated2.getHref());
+
+        // Get the number of contacts after requests
+        int ABSizeAfter = ab.getPersonList().size();
 
         //////////////////////////////////////////////////////////////////////
-        // Verify that GET /contacts/person/3 is well implemented by the
-        ////////////////////////////////////////////////////////////////////// service,
-        ////////////////////////////////////////////////////////////////////// i.e
-        // test that it is safe and idempotent
+        // Verify that GET /contacts/person/3 is well implemented by
+        // the service
         //////////////////////////////////////////////////////////////////////
 
+        // test that it is safe
+        assertEquals(ABSizeBefore, ABSizeAfter);
+
+        // test that it is idempotent
+        assertEquals(response1.getStatus(), response2.getStatus());
+        assertEquals(response1.getMediaType(), response2.getMediaType());
+        assertEquals(mariaUpdated1.getName(), mariaUpdated2.getName());
+        assertEquals(mariaUpdated1.getId(), mariaUpdated2.getId());
+        assertEquals(mariaUpdated1.getHref(), mariaUpdated2.getHref());
     }
 
     @Test
